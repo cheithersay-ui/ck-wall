@@ -26,24 +26,27 @@ app.get('/api/config', (req, res) => {
 });
 
 // Get a random photo to doodle on (from Cloudinary uploads, not doodled ones)
-// We store original upload URLs separately
+// We store original upload URLs with uploader uid
 let originals = [];
 
 app.post('/api/uploaded', (req, res) => {
-  const { url } = req.body;
+  const { url, uid } = req.body;
   if (url) {
-    originals.push(url);
+    originals.push({ url, uid: uid || null });
     io.emit('original-count', originals.length);
   }
   res.json({ ok: true });
 });
 
 app.get('/api/random-photo', (req, res) => {
-  if (originals.length === 0) {
+  const uid = req.query.uid;
+  // Filter out photos uploaded by this same user
+  const pool = uid ? originals.filter(o => o.uid !== uid) : originals;
+  if (pool.length === 0) {
     return res.json({ url: null });
   }
-  const url = originals[Math.floor(Math.random() * originals.length)];
-  res.json({ url });
+  const pick = pool[Math.floor(Math.random() * pool.length)];
+  res.json({ url: pick.url });
 });
 
 // Submit a doodled image
