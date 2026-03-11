@@ -357,9 +357,10 @@
     const { url } = await res.json();
 
     if (!url) {
-      // First person — no previous photo to doodle on, go to gallery
+      // Not enough other photos to doodle on yet — go to gallery
       uploadBtn.style.pointerEvents = 'auto';
       uploadBtn.style.opacity = '1';
+      galleryEmpty.textContent = 'Photo uploaded. Waiting for others to doodle...';
       showScreen('gallery');
       return;
     }
@@ -479,6 +480,7 @@
   const galleryScreen = document.getElementById('gallery-screen');
   const galleryEmpty = document.getElementById('galleryEmpty');
   let floaters = [];
+  let seenIds = new Set();
 
   let galleryLoaded = false;
 
@@ -493,11 +495,14 @@
 
   // Listen for new doodles in real time
   socket.on('new-doodle', (item) => {
+    if (seenIds.has(item.id)) return;
     galleryEmpty.style.display = 'none';
     addFloater(item);
   });
 
   function addFloater(item) {
+    if (seenIds.has(item.id)) return;
+    seenIds.add(item.id);
     const img = document.createElement('img');
     img.src = item.dataUrl;
     img.className = 'floating-img';
