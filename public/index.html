@@ -267,6 +267,9 @@
   // ============================================================
   let CONFIG = { cloudName: '', uploadPreset: '' };
 
+  // Anonymous user ID for this browser session
+  const UID = Math.random().toString(36).slice(2, 10);
+
   const socket = io();
 
   // Screens
@@ -320,7 +323,7 @@
       await fetch('/api/uploaded', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: data.secure_url })
+        body: JSON.stringify({ url: data.secure_url, uid: UID })
       });
 
       uploadStatus.className = 'status-text done';
@@ -350,7 +353,7 @@
   let bgImage = null;
 
   async function loadDoodle() {
-    const res = await fetch('/api/random-photo');
+    const res = await fetch(`/api/random-photo?uid=${UID}`);
     const { url } = await res.json();
 
     if (!url) {
