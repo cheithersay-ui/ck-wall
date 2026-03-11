@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Confidential Kitchen</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; overflow: hidden; }
+
+  body {
+    font-family: 'IBM Plex Mono', monospace;
+    background: #fff;
+    color: #000;
+  }
+
+  /* ========== SCREENS ========== */
+  .screen {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #fff;
+    transition: opacity 0.4s ease;
+    z-index: 10;
+  }
+
+  .screen.hidden {
+    opacity: 0;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ========== UPLOAD SCREEN ========== */
+  #upload-screen {
+    gap: 2rem;
+  }
+
+  .btn {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.85rem;
+    letter-spacing: 0.03em;
+    color: #000;
+    background: #2455F0;
+    border: none;
+    padding: 1.1rem 2rem;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .btn:active { background: #1a3fc0; }
+  @media (hover: hover) { .btn:hover { background: #1a3fc0; } }
+
+  .btn-outline {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.8rem;
+    letter-spacing: 0.03em;
+    color: #000;
+    background: none;
+    border: 1px solid #000;
+    padding: 0.8rem 1.8rem;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+  }
+
+  .btn-outline:active { background: #000; color: #fff; }
+  @media (hover: hover) { .btn-outline:hover { background: #000; color: #fff; } }
+
+  .file-input { display: none; }
+
+  .status-text {
+    font-size: 0.75rem;
+    color: #999;
+    min-height: 1.2em;
+  }
+
+  .status-text.active { color: #2455F0; }
+  .status-text.done { color: #000; }
+  .status-text.error { color: #c44; }
+
+  /* ========== DOODLE SCREEN ========== */
+  #doodle-screen {
+    background: #fff;
+    justify-content: flex-start;
+    padding: 0;
+  }
+
+  .doodle-header {
+    width: 100%;
+    padding: 1rem 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #eee;
+    z-index: 5;
+  }
+
+  .doodle-header span {
+    font-size: 0.7rem;
+    letter-spacing: 0.03em;
+    color: #999;
+  }
+
+  .doodle-tools {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .tool-btn {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.02em;
+    padding: 0.4rem 0.7rem;
+    border: 1px solid #ddd;
+    background: #fff;
+    color: #000;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .tool-btn.active {
+    background: #000;
+    color: #fff;
+    border-color: #000;
+  }
+
+  .canvas-wrap {
+    flex: 1;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+    background: #fafafa;
+  }
+
+  #doodle-canvas {
+    touch-action: none;
+    max-width: 100%;
+    max-height: 100%;
+  }
+
+  .doodle-footer {
+    width: 100%;
+    padding: 1rem 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-top: 1px solid #eee;
+    gap: 0.8rem;
+  }
+
+  .color-row {
+    display: flex;
+    gap: 0.4rem;
+  }
+
+  .color-dot {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+
+  .color-dot.active {
+    border-color: #000;
+  }
+
+  /* ========== GALLERY SCREEN ========== */
+  #gallery-screen {
+    background: #fff;
+    z-index: 0;
+    justify-content: flex-start;
+    overflow: hidden;
+  }
+
+  .gallery-empty {
+    font-size: 0.75rem;
+    color: #ccc;
+    letter-spacing: 0.03em;
+  }
+
+  .floating-img {
+    position: absolute;
+    border: 1px solid #eee;
+    box-shadow: 0 2px 20px rgba(0,0,0,0.06);
+    transition: opacity 0.8s ease;
+    opacity: 0;
+  }
+
+  .floating-img.visible {
+    opacity: 0.85;
+  }
+
+  .gallery-upload-btn {
+    position: fixed;
+    bottom: 1.5rem;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.03em;
+    color: #000;
+    background: #2455F0;
+    border: none;
+    padding: 0.7rem 1.4rem;
+    cursor: pointer;
+    z-index: 20;
+    transition: background 0.2s;
+  }
+
+  .gallery-upload-btn:active { background: #1a3fc0; }
+</style>
+</head>
+<body>
+
+<!-- ===== UPLOAD SCREEN ===== -->
+<div class="screen" id="upload-screen">
+  <input type="file" class="file-input" id="fileInput" accept="image/*" capture="environment">
+  <button class="btn" id="uploadBtn" onclick="document.getElementById('fileInput').click()">
+    Upload photo
+  </button>
+  <div class="status-text" id="uploadStatus"></div>
+</div>
+
+<!-- ===== DOODLE SCREEN ===== -->
+<div class="screen hidden" id="doodle-screen">
+  <div class="doodle-header">
+    <span>Draw on this</span>
+    <div class="doodle-tools">
+      <button class="tool-btn active" data-size="3" onclick="setSize(3, this)">S</button>
+      <button class="tool-btn" data-size="8" onclick="setSize(8, this)">M</button>
+      <button class="tool-btn" data-size="16" onclick="setSize(16, this)">L</button>
+    </div>
+  </div>
+
+  <div class="canvas-wrap">
+    <canvas id="doodle-canvas"></canvas>
+  </div>
+
+  <div class="doodle-footer">
+    <div class="color-row" id="colorRow">
+      <div class="color-dot active" style="background:#000" data-color="#000000" onclick="setColor('#000000', this)"></div>
+      <div class="color-dot" style="background:#2455F0" data-color="#2455F0" onclick="setColor('#2455F0', this)"></div>
+      <div class="color-dot" style="background:#fff; border:1px solid #ddd" data-color="#FFFFFF" onclick="setColor('#FFFFFF', this)"></div>
+      <div class="color-dot" style="background:#e03030" data-color="#e03030" onclick="setColor('#e03030', this)"></div>
+    </div>
+    <button class="btn" id="submitDoodle" onclick="submitDoodle()">Submit</button>
+  </div>
+</div>
+
+<!-- ===== GALLERY SCREEN ===== -->
+<div class="screen hidden" id="gallery-screen">
+  <div class="gallery-empty" id="galleryEmpty">Waiting for submissions...</div>
+  <button class="gallery-upload-btn" onclick="goToUpload()">Upload photo</button>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+  // ============================================================
+  //  CONFIG
+  // ============================================================
+  let CONFIG = { cloudName: '', uploadPreset: '' };
+
+  const socket = io();
+
+  // Screens
+  const screens = {
+    upload: document.getElementById('upload-screen'),
+    doodle: document.getElementById('doodle-screen'),
+    gallery: document.getElementById('gallery-screen')
+  };
+
+  function showScreen(name) {
+    Object.entries(screens).forEach(([key, el]) => {
+      el.classList.toggle('hidden', key !== name);
+    });
+    if (name === 'gallery') loadGallery();
+  }
+
+  // Load config
+  fetch('/api/config').then(r => r.json()).then(c => CONFIG = c);
+
+  // ============================================================
+  //  UPLOAD
+  // ============================================================
+  const fileInput = document.getElementById('fileInput');
+  const uploadStatus = document.getElementById('uploadStatus');
+  const uploadBtn = document.getElementById('uploadBtn');
+
+  fileInput.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    uploadBtn.style.pointerEvents = 'none';
+    uploadBtn.style.opacity = '0.4';
+    uploadStatus.className = 'status-text active';
+    uploadStatus.textContent = 'Uploading...';
+
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('upload_preset', CONFIG.uploadPreset);
+      fd.append('folder', 'ck-guest-uploads');
+
+      const res = await fetch(
+        `https://api.cloudinary.com/v1_1/${CONFIG.cloudName}/image/upload`,
+        { method: 'POST', body: fd }
+      );
+
+      if (!res.ok) throw new Error('Upload failed');
+      const data = await res.json();
+
+      // Tell server about the new original
+      await fetch('/api/uploaded', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: data.secure_url })
+      });
+
+      uploadStatus.className = 'status-text done';
+      uploadStatus.textContent = '';
+
+      // Now load doodle screen with a random previous photo
+      loadDoodle();
+
+    } catch (err) {
+      uploadStatus.className = 'status-text error';
+      uploadStatus.textContent = 'Failed. Try again.';
+      uploadBtn.style.pointerEvents = 'auto';
+      uploadBtn.style.opacity = '1';
+    }
+
+    fileInput.value = '';
+  });
+
+  // ============================================================
+  //  DOODLE
+  // ============================================================
+  const canvas = document.getElementById('doodle-canvas');
+  const ctx = canvas.getContext('2d');
+  let drawing = false;
+  let penColor = '#000000';
+  let penSize = 3;
+  let bgImage = null;
+
+  async function loadDoodle() {
+    const res = await fetch('/api/random-photo');
+    const { url } = await res.json();
+
+    if (!url) {
+      // First person — no previous photo to doodle on, go to gallery
+      uploadBtn.style.pointerEvents = 'auto';
+      uploadBtn.style.opacity = '1';
+      showScreen('gallery');
+      return;
+    }
+
+    // Load the image onto canvas
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      bgImage = img;
+
+      // Size canvas to fit screen while keeping aspect ratio
+      const wrap = document.querySelector('.canvas-wrap');
+      const maxW = wrap.clientWidth;
+      const maxH = wrap.clientHeight;
+      const scale = Math.min(maxW / img.width, maxH / img.height, 1);
+
+      canvas.width = img.width * scale;
+      canvas.height = img.height * scale;
+
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+      uploadBtn.style.pointerEvents = 'auto';
+      uploadBtn.style.opacity = '1';
+
+      showScreen('doodle');
+    };
+    img.onerror = () => {
+      // If image fails to load, skip to done
+      uploadBtn.style.pointerEvents = 'auto';
+      uploadBtn.style.opacity = '1';
+      showScreen('done');
+    };
+    img.src = url;
+  }
+
+  // Drawing
+  function getPos(e) {
+    const rect = canvas.getBoundingClientRect();
+    const t = e.touches ? e.touches[0] : e;
+    return {
+      x: (t.clientX - rect.left) * (canvas.width / rect.width),
+      y: (t.clientY - rect.top) * (canvas.height / rect.height)
+    };
+  }
+
+  canvas.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    drawing = true;
+    const p = getPos(e);
+    ctx.beginPath();
+    ctx.moveTo(p.x, p.y);
+    ctx.strokeStyle = penColor;
+    ctx.lineWidth = penSize;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+  });
+
+  canvas.addEventListener('pointermove', (e) => {
+    if (!drawing) return;
+    e.preventDefault();
+    const p = getPos(e);
+    ctx.lineTo(p.x, p.y);
+    ctx.stroke();
+  });
+
+  canvas.addEventListener('pointerup', () => { drawing = false; });
+  canvas.addEventListener('pointercancel', () => { drawing = false; });
+
+  function setColor(c, el) {
+    penColor = c;
+    document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
+    el.classList.add('active');
+  }
+
+  function setSize(s, el) {
+    penSize = s;
+    document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+  }
+
+  async function submitDoodle() {
+    const btn = document.getElementById('submitDoodle');
+    btn.style.pointerEvents = 'none';
+    btn.style.opacity = '0.4';
+
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+
+    try {
+      await fetch('/api/submit-doodle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dataUrl })
+      });
+    } catch (err) {
+      // fail silently
+    }
+
+    btn.style.pointerEvents = 'auto';
+    btn.style.opacity = '1';
+
+    showScreen('gallery');
+  }
+
+  // ============================================================
+  //  NAVIGATION
+  // ============================================================
+  function goToUpload() {
+    uploadStatus.textContent = '';
+    uploadBtn.style.pointerEvents = 'auto';
+    uploadBtn.style.opacity = '1';
+    showScreen('upload');
+  }
+
+  // ============================================================
+  //  GALLERY
+  // ============================================================
+  const galleryScreen = document.getElementById('gallery-screen');
+  const galleryEmpty = document.getElementById('galleryEmpty');
+  let floaters = [];
+
+  let galleryLoaded = false;
+
+  async function loadGallery() {
+    if (galleryLoaded) return;
+    galleryLoaded = true;
+    const res = await fetch('/api/gallery');
+    const items = await res.json();
+    items.forEach(addFloater);
+    if (items.length > 0) galleryEmpty.style.display = 'none';
+  }
+
+  // Listen for new doodles in real time
+  socket.on('new-doodle', (item) => {
+    galleryEmpty.style.display = 'none';
+    addFloater(item);
+  });
+
+  function addFloater(item) {
+    const img = document.createElement('img');
+    img.src = item.dataUrl;
+    img.className = 'floating-img';
+
+    // Random size
+    const size = 120 + Math.random() * 100;
+    img.style.width = size + 'px';
+    img.style.height = 'auto';
+
+    // Random starting position
+    const x = Math.random() * (window.innerWidth - size);
+    const y = Math.random() * (window.innerHeight - size);
+    img.style.left = x + 'px';
+    img.style.top = y + 'px';
+
+    galleryScreen.appendChild(img);
+
+    // Fade in
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        img.classList.add('visible');
+      });
+    });
+
+    // Drift animation
+    const drift = {
+      el: img,
+      x: x,
+      y: y,
+      vx: (Math.random() - 0.5) * 0.4,
+      vy: (Math.random() - 0.5) * 0.4,
+      w: size,
+      h: size
+    };
+    floaters.push(drift);
+  }
+
+  // Animation loop for floating
+  function animate() {
+    const W = window.innerWidth;
+    const H = window.innerHeight;
+
+    floaters.forEach(f => {
+      f.x += f.vx;
+      f.y += f.vy;
+
+      // Bounce off edges
+      if (f.x < 0 || f.x + f.w > W) f.vx *= -1;
+      if (f.y < 0 || f.y + f.h > H) f.vy *= -1;
+
+      // Keep in bounds
+      f.x = Math.max(0, Math.min(W - f.w, f.x));
+      f.y = Math.max(0, Math.min(H - f.h, f.y));
+
+      f.el.style.left = f.x + 'px';
+      f.el.style.top = f.y + 'px';
+    });
+
+    requestAnimationFrame(animate);
+  }
+
+  animate();
+</script>
+
+</body>
+</html>
